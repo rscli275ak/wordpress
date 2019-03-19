@@ -2,3 +2,5 @@
 db
 # Ignore web files (will be pulled by instanciating the container)
 www
+# Ignore macos files
+.DS_Store
