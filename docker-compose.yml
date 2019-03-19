@@ -1,0 +1,55 @@
+# docker container run --name wordpress -p80:80 -e WORDPRESS_DB_PASSWORD=secret --network wp_network -v ~/Docker/wp.local/www:/var/www/html -dit wordpress
+# docker container run --name phpmyadmin -p 8080:80 -e PMA_HOST=mysql --network wp_network -dit phpmyadmin/phpmyadmin
+# docker container run --name mysql --network wp_network -v ~/Docker/wp.local/db:/var/lib/mysql -dit -e MYSQL_ROOT_PASSWORD=secret mysql:5.7
+
+version: '3.7'
+
+services:
+  # Conteneur applicatif (site wordpress)
+  # Exposé sur le port 80 de l'hôte
+  # Même réseau que la base et phpmyadmin
+  # Dans la configuration du site, l'hôte BDD doit être configuré de la manière suivante :
+  # define('DB_HOST', 'wp_mysql:3306');
+  # define('DB_PASSWORD', 'secret')
+  wordpress:
+    hostname: wp.local
+    image: wordpress:latest
+    ports:
+        - "80:80"
+    # restart: always
+    env_file: 
+      - ./wp-env.env
+    volumes:
+      - ./www:/var/www/html
+    networks: 
+      - wp_network
+
+  # Conteneur de base de données
+  # Même réseau que l'application et PHPMyAdmin
+  # Pas de port exposé
+  wp_mysql:
+    image: mysql:5.7
+    # restart: always
+    volumes:
+        - ./db:/var/lib/mysql
+    environment:
+        MYSQL_ROOT_PASSWORD: secret
+    networks: 
+      - wp_network
+
+  # Conteneur PHPMyAdmin (2ème site exposé sur le port 8080)
+  # Même réseau que l'applicatif et la base de données
+  wp_phpmyadmin:
+    hostname: wp_pma.local
+    image: phpmyadmin/phpmyadmin
+    # restart: always
+    ports:
+        - "8080:80"
+    environment:
+      PMA_HOST: wp_mysql
+    networks: 
+      - wp_network
+
+networks:
+  wp_network:
+    driver: bridge
